@@ -265,6 +265,7 @@ class TempControl{
 	TEMP_CONTROL_FIELD bool doorOpen;
 	
 	friend class TempControlState;
+	friend class ProfileControl;
 };
 	
 extern TempControl tempControl;

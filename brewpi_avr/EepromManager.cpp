@@ -25,6 +25,7 @@
 #include "TempControl.h"
 #include "EepromFormat.h"
 #include "PiLink.h"
+#include "ProfileControl.h"
 
 EepromManager eepromManager;
 EepromAccess eepromAccess;
@@ -147,6 +148,7 @@ bool EepromManager::applySettings()
 	
 	logDebug("Applied settings");
 	
+	profileControl.loadProfile();
 	
 	DeviceConfig deviceConfig;
 	for (uint8_t index = 0; fetchDevice(deviceConfig, index); index++)
@@ -193,6 +195,22 @@ bool EepromManager::storeDevice(const DeviceConfig& config, uint8_t deviceIndex)
 	bool ok = (hasSettings() && deviceIndex<EepromFormat::MAX_DEVICES);
 	if (ok)
 		eepromAccess.writeBlock(pointerOffset(devices)+sizeof(DeviceConfig)*deviceIndex, &config, sizeof(DeviceConfig));	
+	return ok;
+}
+
+bool EepromManager::fetchProfile(ProfileConfig& config)
+{
+	bool ok = hasSettings();
+	if (ok)
+		eepromAccess.readBlock(&config, pointerOffset(profile), sizeof(ProfileConfig));
+	return ok;
+}
+
+bool EepromManager::storeProfile(const ProfileConfig& config)
+{
+	bool ok = hasSettings();
+	if (ok)
+		eepromAccess.writeBlock(pointerOffset(profile), &config, sizeof(ProfileConfig));
 	return ok;
 }
 

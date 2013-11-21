@@ -23,6 +23,7 @@
 #include "Brewpi.h"
 #include "DeviceManager.h"
 #include "TempControl.h"
+#include "ProfileManager.h"
 
 
 struct ChamberSettings
@@ -54,6 +55,7 @@ struct EepromFormat
 	byte reserved[4];	
 	ChamberBlock chambers[MAX_CHAMBERS];
 	DeviceConfig devices[MAX_DEVICES];
+	ProfileConfig profile;
 };
 
 

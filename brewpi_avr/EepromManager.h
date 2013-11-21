@@ -51,6 +51,7 @@ public:
 extern EepromAccess eepromAccess;
 
 class DeviceConfig;
+class ProfileConfig;
 
 
 // todo - the Eeprom manager should avoid too frequent saves to the eeprom since it supports 100,000 writes. 
@@ -94,7 +95,10 @@ public:
 
 	static bool fetchDevice(DeviceConfig& config, uint8_t deviceIndex);
 	static bool storeDevice(const DeviceConfig& config, uint8_t deviceIndex);
-	
+
+	static bool fetchProfile(ProfileConfig& config);
+	static bool storeProfile(const ProfileConfig& config);
+
 	static uint8_t saveDefaultDevices();
 };
 

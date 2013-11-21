@@ -36,6 +36,7 @@
 #include "EepromManager.h"
 #include "EepromFormat.h"
 #include "SettingsManager.h"
+#include "ProfileControl.h"
 #if BREWPI_SIMULATE
 #include "Simulator.h"
 #endif
@@ -207,6 +208,10 @@ void PiLink::receive(void){
 			//printResponse('U'); // moved into function below, because installing devices can cause printing in between
 			deviceManager.parseDeviceDefinition(piStream);
 			//piLink.printNewLine();
+			break;
+
+		case 'p': // update profile
+			profileManager.parseProfileDefinition(piStream);
 			break;
 			
 		case 'h': // hardware query

@@ -43,6 +43,7 @@
 #include "FastDigitalPin.h"
 #include "OneWireActuator.h"
 #include "SettingsManager.h"
+#include "ProfileControl.h"
 
 #if BREWPI_SIMULATE
 	#include "Simulator.h"
@@ -103,6 +104,7 @@ void brewpiLoop(void)
 	if(ticks.millis() - lastUpdate >= (1000)) { //update settings every second
 		lastUpdate = ticks.millis();
 			
+		profileControl.updateBeerSetpoint();
 		tempControl.updateTemperatures();
 		tempControl.detectPeaks();
 		tempControl.updatePID();

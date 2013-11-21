@@ -28,6 +28,7 @@
 #define PRINTF_BUFFER_SIZE 128
 
 class DeviceConfig;
+class ProfileConfig;
 
 
 class PiLink{
@@ -134,6 +135,7 @@ class PiLink{
 	private:
 	static bool firstPair;
 	friend class DeviceManager;
+	friend class ProfileManager;
 	friend class PiLinkTest;
 	friend class Logger;
 	static char printfBuff[PRINTF_BUFFER_SIZE];
