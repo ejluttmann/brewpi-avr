@@ -51,7 +51,9 @@ public:
 extern EepromAccess eepromAccess;
 
 class DeviceConfig;
+#if BREWPI_TEMP_PROFILE
 class ProfileConfig;
+#endif //BREWPI_TEMP_PROFILE
 
 
 // todo - the Eeprom manager should avoid too frequent saves to the eeprom since it supports 100,000 writes. 
@@ -96,8 +98,10 @@ public:
 	static bool fetchDevice(DeviceConfig& config, uint8_t deviceIndex);
 	static bool storeDevice(const DeviceConfig& config, uint8_t deviceIndex);
 
+#if BREWPI_TEMP_PROFILE
 	static bool fetchProfile(ProfileConfig& config);
 	static bool storeProfile(const ProfileConfig& config);
+#endif //BREWPI_TEMP_PROFILE
 
 	static uint8_t saveDefaultDevices();
 };

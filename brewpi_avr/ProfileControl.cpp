@@ -18,6 +18,7 @@
  * along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if BREWPI_TEMP_PROFILE
 #include "ProfileControl.h"
 #include "EepromManager.h"
 #include "TempControl.h"
@@ -100,3 +101,4 @@ void ProfileControl::updateBeerSetpoint() {
 		}
 	}
 }
+#endif //BREWPI_TEMP_PROFILE

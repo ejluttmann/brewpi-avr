@@ -265,7 +265,9 @@ class TempControl{
 	TEMP_CONTROL_FIELD bool doorOpen;
 	
 	friend class TempControlState;
+#if BREWPI_TEMP_PROFILE
 	friend class ProfileControl;
+#endif // BREWPI_TEMP_PROFILE
 };
 	
 extern TempControl tempControl;

@@ -20,6 +20,8 @@
 
 #pragma once
 
+#if BREWPI_TEMP_PROFILE
+
 #include <inttypes.h>
 #include "TemperatureFormats.h"
 #include "ProfileManager.h"
@@ -48,3 +50,5 @@ public:
 };
 
 extern ProfileControl profileControl;
+
+#endif //BREWPI_TEMP_PROFILE

@@ -104,7 +104,9 @@ void brewpiLoop(void)
 	if(ticks.millis() - lastUpdate >= (1000)) { //update settings every second
 		lastUpdate = ticks.millis();
 			
+#if BREWPI_TEMP_PROFILE
 		profileControl.updateBeerSetpoint();
+#endif //BREWPI_TEMP_PROFILE
 		tempControl.updateTemperatures();
 		tempControl.detectPeaks();
 		tempControl.updatePID();

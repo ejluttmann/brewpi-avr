@@ -28,7 +28,9 @@
 #define PRINTF_BUFFER_SIZE 128
 
 class DeviceConfig;
+#if BREWPI_TEMP_PROFILE
 class ProfileConfig;
+#endif //BREWPI_TEMP_PROFILE
 
 
 class PiLink{
@@ -135,7 +137,9 @@ class PiLink{
 	private:
 	static bool firstPair;
 	friend class DeviceManager;
+#if BREWPI_TEMP_PROFILE
 	friend class ProfileManager;
+#endif //BREWPI_TEMP_PROFILE
 	friend class PiLinkTest;
 	friend class Logger;
 	static char printfBuff[PRINTF_BUFFER_SIZE];

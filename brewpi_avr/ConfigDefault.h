@@ -183,5 +183,8 @@
 #define DISPLAY_TIME_HMS 1
 #endif
 
+#ifndef BREWPI_TEMP_PROFILE
+#define BREWPI_TEMP_PROFILE 0
+#endif
 
 

@@ -18,6 +18,7 @@
  * along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if BREWPI_TEMP_PROFILE
 #include "ProfileManager.h"
 #include "PiLink.h"
 #include "BrewpiStrings.h"
@@ -35,6 +36,9 @@ const char PROFILE_ATTRIB_CURRENT_STEP = 'x';
 const char PROFILE_ATTRIB_INTERPOLATION = 'p';
 const char PROFILE_ATTRIB_RUN_PROFILE = 'r';
 
+static const char STR_PROFILE_ATTRIB_INT[] PROGMEM = ",\"%c\":%d";
+
+
 static void printProfile(ProfileConfig& config, const char* value, Print& p)
 {
 	char buf[17];
@@ -45,13 +49,13 @@ static void printProfile(ProfileConfig& config, const char* value, Print& p)
 	sprintf_P(buf, PSTR("\"%c\":%d"), PROFILE_ATTRIB_CURRENT_STEP, config.currentStep);
 	p.print(buf);
 
-	sprintf_P(buf, PSTR(",\"%c\":%d"), PROFILE_ATTRIB_CURRENT_DURATION, config.currentDuration);
+	sprintf_P(buf, STR_PROFILE_ATTRIB_INT, PROFILE_ATTRIB_CURRENT_DURATION, config.currentDuration);
 	p.print(buf);
 
-	sprintf_P(buf, PSTR(",\"%c\":%d"), PROFILE_ATTRIB_RUN_PROFILE, config.running);
+	sprintf_P(buf, STR_PROFILE_ATTRIB_INT, PROFILE_ATTRIB_RUN_PROFILE, config.running);
 	p.print(buf);
 
-	sprintf_P(buf, PSTR(",\"%c\":%d"), PROFILE_ATTRIB_INTERPOLATION, config.interpolation);
+	sprintf_P(buf, STR_PROFILE_ATTRIB_INT, PROFILE_ATTRIB_INTERPOLATION, config.interpolation);
 	p.print(buf);
 
 	for(i=0; i<PROFILE_SIZE; i++){
@@ -59,7 +63,7 @@ static void printProfile(ProfileConfig& config, const char* value, Print& p)
 		tempToString(tbuff, config.profileSteps[i].setpoint, 3, sizeof(tbuff)/sizeof(tbuff[0]));
 		sprintf_P(buf, PSTR(",\"%c%d\":%s"), PROFILE_ATTRIB_SETPOINT, i, tbuff);
 		p.print(buf);
-		sprintf_P(buf, PSTR(",\"%c%d\":%d"), PROFILE_ATTRIB_DURATION, i, config.profileSteps[i].duration);
+		sprintf_P(buf, STR_PROFILE_ATTRIB_INT, PROFILE_ATTRIB_DURATION, i, config.profileSteps[i].duration);
 		p.print(buf);
 	}
 	p.print('}');
@@ -114,3 +118,4 @@ void ProfileManager::parseProfileDefinition(Stream& p){
 	piLink.printNewLine();
 
 }
+#endif //BREWPI_TEMP_PROFILE

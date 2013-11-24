@@ -148,7 +148,9 @@ bool EepromManager::applySettings()
 	
 	logDebug("Applied settings");
 	
+#if BREWPI_TEMP_PROFILE
 	profileControl.loadProfile();
+#endif //BREWPI_TEMP_PROFILE
 	
 	DeviceConfig deviceConfig;
 	for (uint8_t index = 0; fetchDevice(deviceConfig, index); index++)
@@ -198,6 +200,7 @@ bool EepromManager::storeDevice(const DeviceConfig& config, uint8_t deviceIndex)
 	return ok;
 }
 
+#if BREWPI_TEMP_PROFILE
 bool EepromManager::fetchProfile(ProfileConfig& config)
 {
 	bool ok = hasSettings();
@@ -213,6 +216,7 @@ bool EepromManager::storeProfile(const ProfileConfig& config)
 		eepromAccess.writeBlock(pointerOffset(profile), &config, sizeof(ProfileConfig));
 	return ok;
 }
+#endif //BREWPI_TEMP_PROFILE
 
 void fill(int8_t* p, uint8_t size) {
 	while (size-->0) *p++ = -1;

@@ -210,9 +210,11 @@ void PiLink::receive(void){
 			//piLink.printNewLine();
 			break;
 
+#if BREWPI_TEMP_PROFILE
 		case 'p': // update profile
 			profileManager.parseProfileDefinition(piStream);
 			break;
+#endif //BREWPI_TEMP_PROFILE
 			
 		case 'h': // hardware query
 			openListResponse('h');

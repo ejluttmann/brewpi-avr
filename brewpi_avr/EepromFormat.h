@@ -55,7 +55,9 @@ struct EepromFormat
 	byte reserved[4];	
 	ChamberBlock chambers[MAX_CHAMBERS];
 	DeviceConfig devices[MAX_DEVICES];
+#if BREWPI_TEMP_PROFILE
 	ProfileConfig profile;
+#endif //BREWPI_TEMP_PROFILE
 };
 
 
