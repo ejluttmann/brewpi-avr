@@ -40,6 +40,7 @@
 #if BREWPI_SIMULATE
 #include "Simulator.h"
 #endif
+#include <avr/wdt.h>
 
 bool PiLink::firstPair;
 char PiLink::printfBuff[PRINTF_BUFFER_SIZE];
@@ -68,7 +69,7 @@ char PiLink::printfBuff[PRINTF_BUFFER_SIZE];
 #endif
 
 void PiLink::init(void){
-	piStream.begin(57600);	
+	piStream.begin(115200);	// Need to be the same as bootloader
 }
 
 // create a printf like interface to the Arduino Serial function. Format string stored in PROGMEM
@@ -231,6 +232,11 @@ void PiLink::receive(void){
 
 		case 'R': // reset 
 			asm volatile ("  jmp 0"); 
+			break;
+
+		case 'B': // jump to bootloader
+			wdt_enable(WDTO_15MS);
+			while(1);
 			break;
 			
 		default:
