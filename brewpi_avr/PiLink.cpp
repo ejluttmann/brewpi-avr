@@ -104,6 +104,19 @@ void printNibble(uint8_t n)
 	piStream.print((char)(n>=10 ? n-10+'A' : n+'0'));
 }
 
+int readNext()
+{
+	uint8_t retries = 0;
+	while (piStream.available()==0) {
+		_delay_us(100);
+		retries++;
+		if(retries >= 10){
+			return -1;
+		}
+	}
+	return piStream.read();
+}
+
 void PiLink::receive(void){
 	if (piStream.available() > 0){		
 		char inByte = piStream.read();
@@ -234,9 +247,11 @@ void PiLink::receive(void){
 			asm volatile ("  jmp 0"); 
 			break;
 
-		case 'B': // jump to bootloader
-			wdt_enable(WDTO_15MS);
-			while(1);
+		case 0x30: // jump to bootloader, 0x30 (ASCII '0') is STK500v1 GET SYNC command
+			if(readNext() == 0x20){	// 0x20 (ASCII ' ') is STK500v1 CRC EOP
+				wdt_enable(WDTO_15MS);
+				while(1);
+			}
 			break;
 			
 		default:
@@ -575,18 +590,6 @@ void PiLink::sendJsonPair(const char * name, uint8_t val) {
 	sendJsonPair(name, (uint16_t)val);
 }
 
-int readNext()
-{
-	uint8_t retries = 0;
-	while (piStream.available()==0) {
-		_delay_us(100);
-		retries++;
-		if(retries >= 10){
-			return -1;
-		}
-	}
-	return piStream.read();		
-}
 /**
  * Parses a token from the piStream.
  * \return true if a token was parsed
