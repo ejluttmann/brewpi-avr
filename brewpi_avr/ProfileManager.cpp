@@ -63,7 +63,7 @@ static void printProfile(ProfileConfig& config, const char* value, Print& p)
 		tempToString(tbuff, config.profileSteps[i].setpoint, 3, sizeof(tbuff)/sizeof(tbuff[0]));
 		sprintf_P(buf, PSTR(",\"%c%d\":%s"), PROFILE_ATTRIB_SETPOINT, i, tbuff);
 		p.print(buf);
-		sprintf_P(buf, STR_PROFILE_ATTRIB_INT, PROFILE_ATTRIB_DURATION, i, config.profileSteps[i].duration);
+		sprintf_P(buf, PSTR(",\"%c%d\":%d"), PROFILE_ATTRIB_DURATION, i, config.profileSteps[i].duration);
 		p.print(buf);
 	}
 	p.print('}');
