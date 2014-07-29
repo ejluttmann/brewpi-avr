@@ -178,24 +178,21 @@ void OneWire::write_bit(uint8_t v)
 {
 	IO_REG_TYPE mask=bitmask;
 	volatile IO_REG_TYPE *reg IO_REG_ASM = baseReg;
-
-	if (v & 1) {
-		noInterrupts();
-		DIRECT_WRITE_LOW(reg, mask);
-		DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
-		delayMicroseconds(10);
-		DIRECT_WRITE_HIGH(reg, mask);	// drive output high
-		interrupts();
-		delayMicroseconds(55);
-	} else {
-		noInterrupts();
-		DIRECT_WRITE_LOW(reg, mask);
-		DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
-		delayMicroseconds(65);
-		DIRECT_WRITE_HIGH(reg, mask);	// drive output high
-		interrupts();
-		delayMicroseconds(5);
+	
+	uint8_t d1 = 10;
+	uint8_t d2 = 55;
+	if (!v&1) {
+		d1 = 65;
+		d2 = 5;
 	}
+	noInterrupts();
+	DIRECT_WRITE_LOW(reg, mask);
+	DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
+	delayMicroseconds(d1);
+	DIRECT_WRITE_HIGH(reg, mask);	// drive output high
+	interrupts();
+	delayMicroseconds(d2);
+	
 }
 
 //
@@ -233,23 +230,25 @@ void OneWire::write(uint8_t v, uint8_t power /* = 0 */) {
     for (bitMask = 0x01; bitMask; bitMask <<= 1) {
 	OneWire::write_bit( (bitMask & v)?1:0);
     }
-    if ( !power) {
-	noInterrupts();
-	DIRECT_MODE_INPUT(baseReg, bitmask);
-	DIRECT_WRITE_LOW(baseReg, bitmask);
-	interrupts();
-    }
+	parasitePowerAfterWrite(power);
 }
 
 void OneWire::write_bytes(const uint8_t *buf, uint16_t count, bool power /* = 0 */) {
   for (uint16_t i = 0 ; i < count ; i++)
     write(buf[i]);
-  if (!power) {
-    noInterrupts();
-    DIRECT_MODE_INPUT(baseReg, bitmask);
-    DIRECT_WRITE_LOW(baseReg, bitmask);
-    interrupts();
-  }
+    parasitePowerAfterWrite(power);
+}
+
+void OneWire::parasitePowerAfterWrite(bool power)
+{	
+#if ONEWIRE_PARASITE_SUPPORT	
+	if (!power) {
+		noInterrupts();
+		DIRECT_MODE_INPUT(baseReg, bitmask);
+		DIRECT_WRITE_LOW(baseReg, bitmask);
+		interrupts();
+	}
+#endif	
 }
 
 //

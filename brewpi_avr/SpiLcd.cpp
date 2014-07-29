@@ -23,9 +23,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
-#include <util/delay.h>
 #include "FastDigitalPin.h"
 #include "Pins.h"
+
+#include <util/delay.h>
 #include <util/atomic.h>
 
 #if BREWPI_SHIFT_LCD
@@ -299,7 +300,7 @@ void SpiLcd::printSpacesToRestOfLine(void){
 	}
 }
 
-#if !print_P_inline
+#ifndef print_P_inline
 void SpiLcd::print_P(const char * str){ // print a string stored in PROGMEM
 	char buf[21]; // create buffer in RAM
 	strcpy_P(buf, str); // copy string to RAM

@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include <Arduino.h> // include Arduino.h or USBCON will always be undefined
-
 /**
  * Do not change this file directly - rather edit Config.h
  */
@@ -69,10 +67,6 @@
 
 #ifndef BREWPI_LOG_DEBUG
 #define BREWPI_LOG_DEBUG 0
-#endif
-
-#ifndef BREWPI_STATIC_CONFIG
-#define BREWPI_STATIC_CONFIG BREWPI_SHIELD_REV_C
 #endif
 
 /**
@@ -154,15 +148,23 @@
 #define BREWPI_ACTUATOR_PINS 1
 #endif
 
+
 #ifndef BREWPI_BOARD
 
-#if defined(USBCON)
-	#define BREWPI_BOARD 'l'		// standard
+#if !ARDUINO
+        #define BREWPI_BOARD BREWPI_BOARD_UNKNOWN
+#elif defined(__AVR_ATmega32U4__)
+        #define BREWPI_BOARD BREWPI_BOARD_LEONARDO
+#elif defined(__AVR_ATmega328P__)
+        #define BREWPI_BOARD BREWPI_BOARD_STANDARD
+#elif defined(__AVR_ATmega2560__)
+        #define BREWPI_BOARD BREWPI_BOARD_MEGA
 #else
-	#define BREWPI_BOARD 's'		// leonardo
+        #error Unknown processor type!
+        #define BREWPI_BOARD BREWPI_BOARD_UNKNOWN
 #endif
 
-#endif
+#endif // ifndef BREWPI_BOARD
 
 #ifndef OPTIMIZE_GLOBAL
 #define OPTIMIZE_GLOBAL 1
@@ -175,8 +177,13 @@
 #define ONEWIRE_CRC8_TABLE 0
 #endif
 
+
 #ifndef BUILD_NUMBER
 #define BUILD_NUMBER 0
+#endif
+
+#ifndef BUILD_NAME
+#define BUILD_NAME "00000000"
 #endif
 
 #ifndef DISPLAY_TIME_HMS
@@ -185,6 +192,13 @@
 
 #ifndef BREWPI_TEMP_PROFILE
 #define BREWPI_TEMP_PROFILE 0
+#endif
+#ifndef ONEWIRE_PARASITE_SUPPORT
+#define ONEWIRE_PARASITE_SUPPORT 0
+#endif
+
+#ifndef DS2413_SUPPORT_SENSE
+#define DS2413_SUPPORT_SENSE 0
 #endif
 
 

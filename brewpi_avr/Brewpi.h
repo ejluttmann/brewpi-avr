@@ -31,6 +31,10 @@
 #define BREWPI_SHIELD_REV_A	1
 #define BREWPI_SHIELD_REV_C	2
 
+#define BREWPI_BOARD_LEONARDO 'l'
+#define BREWPI_BOARD_STANDARD 's'
+#define BREWPI_BOARD_MEGA 'm'
+#define BREWPI_BOARD_UNKNOWN '?'
 
 /*
  * Defines global config for the brewpi project. This file is included in every file in the project to ensure conditional
@@ -40,7 +44,16 @@
  * To customize the build, users may add settings to Config.h, or define symbols in the project.
  */
 
+#ifdef ARDUINO
 #include "Config.h"
+#else
+#include <Config.h>                     // use search path rather than current directory, so that config.h
+#endif
 #include "ConfigDefault.h"
 
 #include <Arduino.h>
+
+#include "Actuator.h"
+
+extern ValueActuator alarm;
+

@@ -20,6 +20,7 @@
 #include "Brewpi.h"
 #include "BrewpiStrings.h"
 #include <limits.h>
+#include <stdint.h>
 
 #include "Display.h"
 #include "DisplayLcd.h"
@@ -27,6 +28,7 @@
 #include "TempControl.h"
 #include "TemperatureFormats.h"
 #include "Pins.h"
+
 
 
 uint8_t LcdDisplay::stateOnDisplay;
@@ -51,6 +53,10 @@ void LcdDisplay::init(void){
 	lcd.begin(20, 4);
 	lcd.clear();
 }
+
+#ifndef UINT16_MAX
+#define UINT16_MAX 65535
+#endif
 
 //print all temperatures on the LCD
 void LcdDisplay::printAllTemperatures(void){
@@ -82,7 +88,7 @@ void LcdDisplay::printBeerTemp(void){
 }
 
 void LcdDisplay::printBeerSet(void){
-	fixed7_9 beerSet = tempControl.getBeerSetting();	
+	temperature beerSet = tempControl.getBeerSetting();	
 	printTemperatureAt(12, 1, beerSet);	
 }
 
@@ -93,21 +99,20 @@ void LcdDisplay::printFridgeTemp(void){
 }
 
 void LcdDisplay::printFridgeSet(void){	
-	fixed7_9 fridgeSet = tempControl.getFridgeSetting();	
+	temperature fridgeSet = tempControl.getFridgeSetting();	
 	if(flags & LCD_FLAG_DISPLAY_ROOM) // beer setting is not active
-		fridgeSet = INT_MIN;
+		fridgeSet = INVALID_TEMP;
 	printTemperatureAt(12, 2, fridgeSet);	
 }
 
-void LcdDisplay::printTemperatureAt(uint8_t x, uint8_t y, fixed7_9 temp){
+void LcdDisplay::printTemperatureAt(uint8_t x, uint8_t y, temperature temp){
 	lcd.setCursor(x,y);
 	printTemperature(temp);
 }
 
 
-void LcdDisplay::printTemperature(fixed7_9 temp){
-	if (temp==INT_MIN)
-	{
+void LcdDisplay::printTemperature(temperature temp){
+	if (temp==INVALID_TEMP) {
 		lcd.print_P(PSTR(" --.-"));
 		return;
 	}
@@ -179,7 +184,7 @@ void LcdDisplay::printMode(void){
 
 // print the current state on the last line of the lcd
 void LcdDisplay::printState(void){
-	uint16_t time = UINT_MAX; // init to max
+	uint16_t time = UINT16_MAX; // init to max
 	uint8_t state = tempControl.getDisplayState();
 	if(state != stateOnDisplay){ //only print static text when state has changed
 		stateOnDisplay = state;

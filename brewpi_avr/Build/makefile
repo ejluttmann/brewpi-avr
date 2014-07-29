@@ -1,7 +1,7 @@
 
 #
 # Copyright 2013 BrewPi/Elco Jacobs.
-# Copyright 2013 Matthew McGowan
+# Copyright 2014 Matthew McGowan
 #
 # This file is part of BrewPi.
 # 
@@ -61,6 +61,7 @@ BOARD ?= leonardo
 BREWPI_STATIC_CONFIG ?= BREWPI_SHIELD_REV_C
 BREWPI_DEBUG ?= 0
 BUILD_NUMBER ?= 0
+BUILD_NAME ?= 00000000
 
 DEFINES = \
  -DBREWPI_STATIC_CONFIG=$(BREWPI_STATIC_CONFIG) \
@@ -68,7 +69,8 @@ DEFINES = \
  -DBREWPI_SIMULTE=$(BREWPI_SIMULATOR) \
  -DARDUINO=$(ARDUINO_VERSION) \
  -DF_CPU=16000000L \
- -DBUILD_NUMBER=$(BUILD_NUMBER)
+ -DBUILD_NUMBER=$(BUILD_NUMBER) \
+ -DBUILD_NAME="\"$(BUILD_NAME)"\"
  
 ifeq ($(BOARD),leonardo)
 	MCU = atmega32u4
@@ -78,10 +80,10 @@ else ifeq ($(BOARD),uno)
 	MCU_HEADERS = standard
 endif
 
-ARDUINO_HEADERS ?= $(ARDUINO_HOME)/hardware/arduino/cores/arduino
+ARDUINO_HEADERS ?= $(SRC)arduino/cores/arduino
 
-MCU_INCLUDE_VARIANT ?= $(ARDUINO_HOME)/hardware/arduino/variants
-MCU_INCLUDE ?= $(MCU_INCLUDE_VARIANT)\$(MCU_HEADERS)
+MCU_INCLUDE_VARIANT ?= $(SRC)arduino/variants
+MCU_INCLUDE ?= $(MCU_INCLUDE_VARIANT)/$(MCU_HEADERS)
 
 USER_OBJS :=
 
@@ -116,6 +118,7 @@ $(SRC)fallback
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
 $(SRC)Actuator.cpp \
+$(SRC)ActuatorArduino.cpp \
 $(SRC)ArduinoFunctions.cpp \
 $(SRC)Brewpi.cpp \
 $(SRC)BrewpiStrings.cpp \
@@ -155,6 +158,7 @@ ASM_SRCS +=
 
 OBJS +=  \
 $(OBJ_DIR)Actuator.o \
+$(OBJ_DIR)ActuatorArduinoPin.o \
 $(OBJ_DIR)ArduinoFunctions.o \
 $(OBJ_DIR)Brewpi.o \
 $(OBJ_DIR)BrewpiStrings.o \
@@ -187,6 +191,7 @@ $(OBJ_DIR)Ticks.o
 
 OBJS_AS_ARGS +=  \
 $(OBJ_DIR)Actuator.o \
+$(OBJ_DIR)ActuatorArduinoPin.o \
 $(OBJ_DIR)ArduinoFunctions.o \
 $(OBJ_DIR)Brewpi.o \
 $(OBJ_DIR)BrewpiStrings.o \
@@ -219,6 +224,7 @@ $(OBJ_DIR)Ticks.o
 
 C_DEPS +=  \
 $(OBJ_DIR)Actuator.d \
+$(OBJ_DIR)ActuatorArduinoPin.d \
 $(OBJ_DIR)ArduinoFunctions.d \
 $(OBJ_DIR)Brewpi.d \
 $(OBJ_DIR)BrewpiStrings.d \
@@ -251,6 +257,7 @@ $(OBJ_DIR)Ticks.d
 
 C_DEPS_AS_ARGS +=  \
 $(OBJ_DIR)Actuator.d \
+$(OBJ_DIR)ActuatorArduinoPin.d \
 $(OBJ_DIR)ArduinoFunctions.d \
 $(OBJ_DIR)Brewpi.d \
 $(OBJ_DIR)BrewpiStrings.d \
@@ -332,7 +339,7 @@ $(OUTPUT_FILE_PATH): $(OBJS) $(USER_OBJS) $(OUTPUT_FILE_DEP) $(LIB_DEP)
 	
 	"$(AVROBJCOPY)" -O srec -R .eeprom -R .fuse -R .lock -R .signature  "$(OUTPUT_DIR)$(TARGET_NAME).elf" "$(OUTPUT_DIR)$(TARGET_NAME).srec"
 	
-	"$(AVRSIZE)" "$(OUTPUT_DIR)$(TARGET_NAME).elf"
+	"$(AVRSIZE)" "$(OUTPUT_DIR)$(TARGET_NAME).elf" > "$(OUTPUT_DIR)$(TARGET_NAME).elf.size"
 
 	
 

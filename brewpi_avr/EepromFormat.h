@@ -29,7 +29,7 @@
 struct ChamberSettings
 {
 	ControlConstants cc;
-	byte reserved[3];
+	byte reserved[1];	// was 3, but added pidMax
 };
 
 struct BeerBlock {
@@ -51,7 +51,7 @@ struct EepromFormat
 	static const uint8_t MAX_DEVICES = MAX_DEVICE_SLOT;
 
 	byte version;
-	byte numChambers;
+	byte numChambers;		// todo - remove this - and increase reserved space.
 	byte reserved[4];	
 	ChamberBlock chambers[MAX_CHAMBERS];
 	DeviceConfig devices[MAX_DEVICES];

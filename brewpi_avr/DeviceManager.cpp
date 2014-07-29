@@ -22,20 +22,25 @@
 #include "BrewpiStrings.h"
 #include "DeviceManager.h"
 #include "TempControl.h"
-#include "OneWireTempSensor.h"
-#include "OneWireActuator.h"
 #include "Actuator.h"
 #include "Sensor.h"
 #include "TempSensorDisconnected.h"
 #include "TempSensorExternal.h"
 #include "PiLink.h"
 #include "EepromFormat.h"
+
+#define CALIBRATION_OFFSET_PRECISION (4)
+
+#ifdef ARDUINO
+#include "OneWireTempSensor.h"
+#include "OneWireActuator.h"
 #include "DS2413.h"
 #include "OneWire.h"
 #include "DallasTemperature.h"
+#include "ActuatorArduinoPin.h"
+#include "SensorArduinoPin.h"
+#endif
 
-
-DeviceManager deviceManager;
 
 /*
  * Defaults for sensors, actuators and temperature sensors when not defined in the eeprom.
@@ -52,6 +57,7 @@ OneWire DeviceManager::fridgeSensorBus(fridgeSensorPin);
 OneWire DeviceManager::primaryOneWireBus(oneWirePin);
 #endif
 #endif
+
 
 OneWire* DeviceManager::oneWireBus(uint8_t pin) {
 #if !BREWPI_SIMULATE
@@ -107,9 +113,13 @@ void* DeviceManager::createDevice(DeviceConfig& config, DeviceType dt)
 				return new DigitalPinSensor(config.hw.pinNr, config.hw.invert);
 			#endif				
 			else
-			// use hardware actuators even for simulator
+#if BREWPI_SIMULATE
+				return new ValueActuator();
+#else                            
+                            
+				// use hardware actuators even for simulator
 				return new DigitalPinActuator(config.hw.pinNr, config.hw.invert);
-		
+#endif		
 		case DEVICE_HARDWARE_ONEWIRE_TEMP:
 		#if BREWPI_SIMULATE
 			return new ExternalTempSensor(false);// initially disconnected, so init doesn't populate the filters with the default value of 0.0
@@ -120,6 +130,9 @@ void* DeviceManager::createDevice(DeviceConfig& config, DeviceType dt)
 #if BREWPI_DS2413
 		case DEVICE_HARDWARE_ONEWIRE_2413:
 		#if BREWPI_SIMULATE
+		if (dt==DEVICETYPE_SWITCH_SENSOR)
+			return new ValueSensor<bool>(false);
+		else
 			return new ValueActuator();
 		#else
 			return new OneWireActuator(oneWireBus(config.hw.pinNr), config.hw.address, config.hw.pio, config.hw.invert);
@@ -326,14 +339,14 @@ const char DEVICE_ATTRIB_TYPE = 't';
 void handleDeviceDefinition(const char* key, const char* val, void* pv)
 {
 	DeviceDefinition* def = (DeviceDefinition*) pv;
-	logDebug("deviceDef %s:%s", key, val);
+//	logDebug("deviceDef %s:%s", key, val);
 	
 	// the characters are listed in the same order as the DeviceDefinition struct.
 	int8_t idx = indexOf(DeviceDefinition::ORDER, key[0]);
 	if (key[0]==DEVICE_ATTRIB_ADDRESS)
 		parseBytes(def->address, val, 8);
 	else if (key[0]==DEVICE_ATTRIB_CALIBRATEADJUST) {
-		def->calibrationAdjust = fixed4_4(stringToTempDiff(val)>>5);
+		def->calibrationAdjust = fixed4_4(stringToTempDiff(val)>>(TEMP_FIXED_POINT_BITS-CALIBRATION_OFFSET_PRECISION));
 	}		
 	else if (idx>=0) 
 		((uint8_t*)def)[idx] = (uint8_t)atol(val);
@@ -495,7 +508,7 @@ bool DeviceManager::isDeviceValid(DeviceConfig& config, DeviceConfig& original, 
 void printAttrib(Print& p, char c, int8_t val, bool first=false) 
 {		
 	if (!first)
-		p.print(',');
+        	p.print(',');
 
 	char tempString[32]; // resulting string limited to 128 chars
 	sprintf_P(tempString, PSTR("\"%c\":%d"), c, val);
@@ -559,7 +572,7 @@ void DeviceManager::printDevice(device_slot_t slot, DeviceConfig& config, const 
 	}
 #endif	
 	if (config.deviceHardware==DEVICE_HARDWARE_ONEWIRE_TEMP) {
-		tempDiffToString(buf, fixed7_9(config.hw.calibration)<<5, 3, 8);
+		tempDiffToString(buf, temperature(config.hw.calibration)<<(TEMP_FIXED_POINT_BITS-CALIBRATION_OFFSET_PRECISION), 3, 8);
 		p.print(",\"j\":");
 		p.print(buf);
 	}
@@ -618,7 +631,7 @@ struct EnumerateHardware
 void handleHardwareSpec(const char* key, const char* val, void* pv)
 {
 	EnumerateHardware* h = (EnumerateHardware*)pv;
-	logDebug("hardwareSpec %s:%s", key, val);
+//	logDebug("hardwareSpec %s:%s", key, val);
 	
 	int8_t idx = indexOf("hpvuf", key[0]);
 	if (idx>=0) {
@@ -626,9 +639,11 @@ void handleHardwareSpec(const char* key, const char* val, void* pv)
 	}			
 }
 
-inline bool matchAddress(uint8_t* a1, uint8_t* a2, uint8_t count) {
+inline bool matchAddress(uint8_t* detected, uint8_t* configured, uint8_t count) {
+	if (!configured[0])
+		return true;
 	while (count-->0) {
-		if (a1[count]!=a2[count])
+		if (detected[count]!=configured[count])
 			return false;
 	}
 	return true;
@@ -673,8 +688,10 @@ inline void DeviceManager::readTempSensorValue(DeviceConfig::Hardware hw, char* 
 #if !BREWPI_SIMULATE
 	OneWire* bus = oneWireBus(hw.pinNr);
 	OneWireTempSensor sensor(bus, hw.address, 0);		// NB: this value is uncalibrated, since we don't have the calibration offset until the device is configured
-	fixed7_9 value = sensor.init();	
-	fixedPointToString(out, value, 3, 9);
+	temperature temp = INVALID_TEMP;
+	if (sensor.init())
+		temp = sensor.read();
+	tempToString(out, temp, 3, 9);
 #else
 	strcpy_P(out, PSTR("0.00"));
 #endif	
@@ -684,11 +701,11 @@ void DeviceManager::handleEnumeratedDevice(DeviceConfig& config, EnumerateHardwa
 {
 	if (h.function && !isAssignable(deviceType(DeviceFunction(h.function)), config.deviceHardware)) 
 		return; // device not applicable for required function
-	
-	logDebug("Handling device");
+		
+//	logDebug("Handling device");
 	out.slot = findHardwareDevice(config);
 	DEBUG_ONLY(logInfoInt(INFO_MATCHING_DEVICE, out.slot));
-	
+		
 	if (isDefinedSlot(out.slot)) {
 		if (h.unused)	// only list unused devices, and this one is already used
 			return;
@@ -698,7 +715,7 @@ void DeviceManager::handleEnumeratedDevice(DeviceConfig& config, EnumerateHardwa
 	
 	out.value[0] = 0;
 	if (h.values) {
-		logDebug("Fetching device value");
+//		logDebug("Fetching device value");
 		switch (config.deviceHardware) {
 			case DEVICE_HARDWARE_ONEWIRE_TEMP:
 				readTempSensorValue(config.hw, out.value);
@@ -709,7 +726,7 @@ void DeviceManager::handleEnumeratedDevice(DeviceConfig& config, EnumerateHardwa
 				break;							
 		}
 	}	
-	logDebug("Passing device to callback");
+//	logDebug("Passing device to callback");
 	callback(&config, &out);
 }
 
@@ -741,7 +758,6 @@ void DeviceManager::enumerateOneWireDevices(EnumerateHardware& h, EnumDevicesCal
 {		
 #if !BREWPI_SIMULATE
 	int8_t pin;	
-	logDebug("Enumerating one-wire devices");
 	for (uint8_t count=0; (pin=deviceManager.enumOneWirePins(count))>=0; count++) {
 		DeviceConfig config;
 		clear((uint8_t*)&config, sizeof(config));
@@ -749,7 +765,7 @@ void DeviceManager::enumerateOneWireDevices(EnumerateHardware& h, EnumDevicesCal
 			continue;
 		config.hw.pinNr = pin;
 		config.chamber = 1; // chamber 1 is default
-		logDebug("Enumerating one-wire devices on pin %d", pin);				
+//		logDebug("Enumerating one-wire devices on pin %d", pin);				
 		OneWire* wire = oneWireBus(pin);	
 		if (wire!=NULL) {
 			wire->reset_search();
@@ -778,13 +794,24 @@ void DeviceManager::enumerateOneWireDevices(EnumerateHardware& h, EnumDevicesCal
 							handleEnumeratedDevice(config, h, callback, output);
 						}
 						break;
-		#endif				
-					default:
+		#endif
+					case DEVICE_HARDWARE_ONEWIRE_TEMP:
+		#if !ONEWIRE_PARASITE_SUPPORT
+						{	// check that device is not parasite powered
+							DallasTemperature sensor(wire);
+							if(sensor.initConnection(config.hw.address)){
+								handleEnumeratedDevice(config, h, callback, output);
+							}
+						}
+		#else
 						handleEnumeratedDevice(config, h, callback, output);
+		#endif
+						break;
+					default:
+						handleEnumeratedDevice(config, h, callback, output);	
 				}
 			}
 		}
-		logDebug("Enumerating one-wire devices on pin %d complete", pin);
 	}
 #endif	
 }
@@ -803,7 +830,7 @@ void DeviceManager::enumerateHardware( Stream& p )
 	DeviceOutput out;
 	out.pp = &p;
 
-	logDebug("Enumerating Hardware");
+//	logDebug("Enumerating Hardware");
 	firstDeviceOutput = true;
 	if (spec.hardware==-1 || isOneWire(DeviceHardware(spec.hardware))) {
 		enumerateOneWireDevices(spec, OutputEnumeratedDevices, out);
@@ -812,7 +839,7 @@ void DeviceManager::enumerateHardware( Stream& p )
 		enumeratePinDevices(spec, OutputEnumeratedDevices, out);
 	}
 	
-	logDebug("Enumerating Hardware Complete");
+//	logDebug("Enumerating Hardware Complete");
 }
 
 
@@ -848,8 +875,8 @@ void UpdateDeviceState(DeviceDisplay& dd, DeviceConfig& dc, char* val)
 		}
 		else if (dt==DEVICETYPE_TEMP_SENSOR) {
 			BasicTempSensor& s = unwrapSensor(dc.deviceFunction, *ppv);
-			fixed7_9 temp = s.read();
-			fixedPointToString(val, temp, 3, 9);
+			temperature temp = s.read();
+			tempToString(val, temp, 3, 9);
 		}
 		else if (dt==DEVICETYPE_SWITCH_ACTUATOR) {
 			sprintf_P(val, STR_FMT_U, (unsigned int) ((Actuator*)*ppv)->isActive()!=0);			
@@ -907,4 +934,4 @@ DeviceType deviceType(DeviceFunction id) {
 	}
 }	
 
-
+DeviceManager deviceManager;

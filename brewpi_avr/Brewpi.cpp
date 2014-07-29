@@ -36,12 +36,9 @@
 #include "Buzzer.h"
 #include "TempSensor.h"
 #include "TempSensorMock.h"
-#include "OneWireTempSensor.h"
 #include "TempSensorExternal.h"
 #include "Ticks.h"
 #include "Sensor.h"
-#include "FastDigitalPin.h"
-#include "OneWireActuator.h"
 #include "SettingsManager.h"
 #include "ProfileControl.h"
 
@@ -65,6 +62,7 @@ DelayImpl wait = DelayImpl(DELAY_IMPL_CONFIG);
 DisplayType realDisplay;
 DisplayType DISPLAY_REF display = realDisplay;
 
+ValueActuator alarm;
 
 void setup()
 {
@@ -103,6 +101,10 @@ void brewpiLoop(void)
 			
 	if(ticks.millis() - lastUpdate >= (1000)) { //update settings every second
 		lastUpdate = ticks.millis();
+
+#if BREWPI_BUZZER
+		buzzer.setActive(alarm.isActive() && !buzzer.isActive());
+#endif			
 			
 #if BREWPI_TEMP_PROFILE
 		profileControl.updateBeerSetpoint();

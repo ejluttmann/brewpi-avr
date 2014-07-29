@@ -28,6 +28,10 @@
 #include "OneWireDevices.h"
 #include "Pins.h"
 
+#ifdef ARDUINO
+#include "DallasTemperature.h"	// for DeviceAddress
+#endif
+
 /**
  * A user has freedom to connect various devices to the arduino, either via extending the oneWire bus, or by assigning to specific pins, e.g. actuators, switch sensors.
  * Rather than make this compile-time, the configuration is stored at runtime. 
@@ -76,7 +80,7 @@ enum DeviceOwner {
 enum DeviceType {
 	DEVICETYPE_NONE=0,
 	DEVICETYPE_TEMP_SENSOR=1,		/* BasicTempSensor - OneWire */
-	DEVICETYPE_SWITCH_SENSOR=2,		/* SwitchSensor - direct pin */
+	DEVICETYPE_SWITCH_SENSOR=2,		/* SwitchSensor - direct pin and onewire are supported */
 	DEVICETYPE_SWITCH_ACTUATOR=3	/* Actuator - both direct pin and onewire are supported */	
 };
 
@@ -96,7 +100,7 @@ inline bool isAssignable(DeviceType type, DeviceHardware hardware)
 {
 	return (hardware==DEVICE_HARDWARE_PIN && (type==DEVICETYPE_SWITCH_ACTUATOR || type==DEVICETYPE_SWITCH_SENSOR))
 #if BREWPI_DS2413
-	|| (hardware==DEVICE_HARDWARE_ONEWIRE_2413 && type==DEVICETYPE_SWITCH_ACTUATOR)
+	|| (hardware==DEVICE_HARDWARE_ONEWIRE_2413 && (type==DEVICETYPE_SWITCH_ACTUATOR || (DS2413_SUPPORT_SENSE && type==DEVICETYPE_SWITCH_SENSOR)))
 #endif	
 	|| (hardware==DEVICE_HARDWARE_ONEWIRE_TEMP && type==DEVICETYPE_TEMP_SENSOR)
 	|| (hardware==DEVICE_HARDWARE_NONE && type==DEVICETYPE_NONE);
@@ -199,6 +203,8 @@ void HandleDeviceDisplay(const char* key, const char* value, void* pv);
  */
 void UpdateDeviceState(DeviceDisplay& dd, DeviceConfig& dc, char* val);
 
+class OneWire;
+
 class DeviceManager
 {
 public:
@@ -207,7 +213,7 @@ public:
 	
 	int8_t enumerateActuatorPins(uint8_t offset)
 	{
-#if BREWPI_ACTUATOR_PINS
+#if BREWPI_ACTUATOR_PINS && defined(ARDUINO)
 #if BREWPI_STATIC_CONFIG<=BREWPI_SHIELD_REV_A
 		switch (offset) {
 			case 0: return heatingPin;
@@ -229,7 +235,7 @@ public:
 	}
 
 	int8_t enumerateSensorPins(uint8_t offset) {
-#if BREWPI_SENSOR_PINS
+#if BREWPI_SENSOR_PINS && defined(ARDUINO)
 		if (offset==0)
 			return doorPin;
 #endif			
@@ -241,6 +247,7 @@ public:
 	 */
 	int8_t enumOneWirePins(uint8_t offset)
 	{		
+#ifdef ARDUINO            
 #if BREWPI_STATIC_CONFIG<=BREWPI_SHIELD_REV_A
 		if (offset==0)
 			return beerSensorPin;
@@ -250,6 +257,7 @@ public:
 #if BREWPI_STATIC_CONFIG>=BREWPI_SHIELD_REV_C
 		if (offset==0)
 			return oneWirePin;
+#endif
 #endif
 		return -1;								
 	}
@@ -299,10 +307,15 @@ private:
 	static void handleEnumeratedDevice(DeviceConfig& config, EnumerateHardware& h, EnumDevicesCallback callback, DeviceOutput& out);
 	static void readTempSensorValue(DeviceConfig::Hardware hw, char* out);
 	
-	static OneWire* oneWireBus(uint8_t pin);
+
 	static void* createDevice(DeviceConfig& config, DeviceType dc);
+	static void* createOneWireGPIO(DeviceConfig& config, DeviceType dt);
 	
 	static void beginDeviceOutput() { firstDeviceOutput = true; }
+
+	static OneWire* oneWireBus(uint8_t pin);
+
+#ifdef ARDUINO
 	
 #if BREWPI_STATIC_CONFIG<=BREWPI_SHIELD_REV_A	
 	static OneWire beerSensorBus;
@@ -310,6 +323,8 @@ private:
 #endif	
 #if BREWPI_STATIC_CONFIG>=BREWPI_SHIELD_REV_C
 	static OneWire primaryOneWireBus;	
+#endif
+        
 #endif
 	static bool firstDeviceOutput;
 };

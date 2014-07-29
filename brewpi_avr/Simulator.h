@@ -98,6 +98,7 @@ public:
 			heating = false;
 			cooling = false;
 			doorOpen = false;
+                        enabled = true;
 		}
 
 	struct TempPair
@@ -107,6 +108,9 @@ public:
 	};
 
 	void step() {
+            if (enabled)
+            {
+            
 		heating = tempControl.stateIsHeating();
 		cooling = tempControl.stateIsCooling();
 		doorOpen = PSensor(tempControl.door)->sense();
@@ -134,8 +138,8 @@ public:
 		beerTemp = newBeerTemp;
 
 		time += 1;
-		
-		updateSensors();
+            }
+                updateSensors();
 	}
 	
 	/**
@@ -233,6 +237,10 @@ public:
 		double r = mid + s*half;
 		return r;
 	}
+        
+        void setSimulationEnabled(bool enabled) {
+            this->enabled = enabled;
+        }
 
 private:	
 
@@ -246,7 +254,7 @@ private:
 
 	void setBasicTemp(ExternalTempSensor& sensor, double temp)
 	{						
-		fixed7_9 fixedTemp = temp*512>=INT_MAX ? INT_MAX : temp*512<=INT_MIN ? INT_MIN : temp*512L;
+		temperature fixedTemp = doubleToTemp(temp);
 		if (!deviceManager.isDefaultTempSensor(&sensor))
 			sensor.setValue(fixedTemp);				
 	}
@@ -329,7 +337,7 @@ private:
 		beerHeatCapacity = beerVolume * beerDensity * 1000 * MASS_HC_WATER;             // Heat capacity potential in J of the beer per deg C.		
 	}		
 
-	
+	bool enabled;
 	unsigned long time;               // time since start of simulation in seconds
 	int fridgeVolume;     // liters
 	double beerDensity;    // SG
@@ -407,7 +415,7 @@ extern Simulator simulator;
  *	A run factor >1  runs as accelerated time. Accurate up to ca. 500.
  *	A run factor of -1 runs at full speed.
  */
-void setRunFactor(fixed7_9 factor);
+void setRunFactor(temperature factor);
 
 /**
  * Callback for handling the simulator JSON config.

@@ -22,10 +22,10 @@
 
 #include "Brewpi.h"
 #include "FilterCascaded.h"
-#include "OneWire.h"
-#include "DallasTemperature.h"
 #include "TempSensorBasic.h"
 #include <stdlib.h>
+
+#define TEMP_SENSOR_DISCONNECTED INVALID_TEMP
 
 #ifndef TEMP_SENSOR_CASCADED_FILTER 
 #define TEMP_SENSOR_CASCADED_FILTER 1
@@ -46,12 +46,14 @@ enum TempSensorType {
 
 class TempSensor {
 	public:	
-	TempSensor(TempSensorType sensorType, BasicTempSensor* sensor =NULL) : _sensor(sensor)  {
+	TempSensor(TempSensorType sensorType, BasicTempSensor* sensor =NULL)  {
 		updateCounter = 255; // first update for slope filter after (255-4s)
+		setSensor(sensor);
 	 }	 	 
 	 
 	 void setSensor(BasicTempSensor* sensor) {
 		 _sensor = sensor;
+		 failedReadCount = -1;
 	 }
 
 	bool hasSlowFilter() { return true; }
@@ -64,17 +66,17 @@ class TempSensor {
 	
 	void update();
 	
-	fixed7_9 readFastFiltered(void);
+	temperature readFastFiltered(void);
 
-	fixed7_9 readSlowFiltered(void){
+	temperature readSlowFiltered(void){
 		return slowFilter.readOutput(); //return most recent unfiltered value
 	}
 	
-	fixed7_9 readSlope(void);
+	temperature readSlope(void);
 	
-	fixed7_9 detectPosPeak(void);
+	temperature detectPosPeak(void);
 	
-	fixed7_9 detectNegPeak(void);
+	temperature detectNegPeak(void);
 	
 	void setFastFilterCoefficients(uint8_t b);
 	
@@ -90,7 +92,11 @@ class TempSensor {
 	TempSensorFilter slowFilter;
 	TempSensorFilter slopeFilter;
 	unsigned char updateCounter;
-	fixed7_25 prevOutputForSlope;
+	temperature_precise prevOutputForSlope;
+	
+	// An indication of how stale the data is in the filters. Each time a read fails, this value is incremented.
+	// It's used to reset the filters after a large enough disconnect delay, and on the first init.
+	int8_t failedReadCount;		// -1 for uninitialized, >=0 afterwards. 
 			
 	friend class ChamberManager;
 	friend class Chamber;
